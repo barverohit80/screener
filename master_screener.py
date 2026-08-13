@@ -9,6 +9,7 @@ from download_bhavcopy_to_supabase import download_bhavcopies_to_db
 from episodic_pivot_supabase import run_episodic_pivot_db_screener, get_db_engine
 from download_nse_52wk import check_nse_report
 from run_llm_screener import analyze_with_gemini, send_telegram_markdown
+from ep_d1_performance_tracker import run_ep_d1_performance_tracker
 
 # =====================================================================
 # CONFIGURATION
@@ -171,6 +172,10 @@ INPUT DATA (CSV FORMAT) - DATE: {target_date_str}
             send_telegram_markdown(analysis_result, target_date_str)
         else:
             print("⚠️ AI Analysis skipped or failed.")
+
+        # 6. Run D+1 Performance Tracking
+        print("\nSTEP 6: Running D+1 Performance Tracking (Last 50 Days)...")
+        run_ep_d1_performance_tracker()
 
         print("\n" + "═"*60 + "\n")
     else:

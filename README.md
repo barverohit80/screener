@@ -65,6 +65,7 @@ python master_screener.py
 - **Bhavcopy Sync**: `python download_bhavcopy_to_supabase.py`
 - **NSE 52-Week High Downloader**: `python download_nse_52wk.py`
 - **Episodic Pivot Database Screener**: `python episodic_pivot_supabase.py`
+- **EP D+1 Performance Tracker**: `python ep_d1_performance_tracker.py`
 - **LLM Analyzer**: `python run_llm_screener.py`
 - **Weekly Screener**: `python weekly_screener.py`
 
@@ -79,6 +80,7 @@ python master_screener.py
 ├── Daily_momentom_screener.txt   # Prompt template for Gemini LLM analysis
 ├── download_bhavcopy_to_supabase.py
 ├── download_nse_52wk.py
+├── ep_d1_performance_tracker.py  # D+1 Performance tracker (50-day data retention)
 ├── episodic_pivot_supabase.py
 ├── llm_analyzer.py
 ├── master_screener.py            # Main pipeline orchestrator
