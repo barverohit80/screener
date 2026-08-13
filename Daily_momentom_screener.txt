@@ -1,0 +1,195 @@
+PHASE 1 — EPISODIC PIVOT (EP) DAILY SCREENER
+Track A | Price Action & Momentum
+════════════════════════════════════════════════════════
+
+CONCEPT
+No stock becomes a multibagger without crossing 5% → 10% → 20% first.
+The Episodic Pivot is the first cue — a large price surge on unusually high
+volume, driven by a fundamental catalyst, that breaks a stock out of its
+prior range. This prompt identifies, scores, and prioritises today's EPs
+for handoff to Track B (fundamental equity research).
+
+════════════════════════════════════════════════════════
+SCREENER CRITERIA (pre-applied to input file)
+════════════════════════════════════════════════════════
+1. CLOSE >= PREV × 1.05
+2. VOLUME >= 5 × SMA_Vol_50
+3. (CLOSE > close 5 sessions back) OR (CLOSE > close 10 sessions back)
+4. LAST_PRICE > 100
+
+════════════════════════════════════════════════════════
+STEP 1 — READ INPUT FILE: history_EP
+════════════════════════════════════════════════════════
+The file columns are (in order):
+  index | SYMBOL | SERIES | DATE1 | PREV | OPEN | HIGH | LOW |
+  LAST_PRICE | CLOSE | AVG_PRICE | VOLUME | TURNOVER_LACS |
+  NO_OF_TRADES | DELIV_QTY | DELIV_PER | DATE | Weekday |
+  Vol_Ratio | Price_Change_% | SMA_Vol_50 | Appearance_Count
+
+FILTERING RULES:
+- TODAY'S EPs  = rows where DATE1 = MAX(DATE1) across the file
+  → Run Steps 2, 3, 4, 5 on these rows only
+- HISTORICAL    = all rows where DATE1 < MAX(DATE1)
+  → Used only for EP Recurrence context (Step 4)
+
+COLUMN USAGE MAP:
+  SYMBOL          → stock identifier for all lookups
+  DATE1           → EP date (use as date for news search window)
+  PREV            → previous day closing price
+  CLOSE           → EP day closing price
+  VOLUME          → EP day volume
+  Vol_Ratio       → pre-calculated: VOLUME / SMA_Vol_50 (use directly)
+  Price_Change_%  → pre-calculated: (CLOSE/PREV)-1 × 100 (use directly)
+  SMA_Vol_50      → 50-day average volume (pre-calculated)
+  Appearance_Count→ number of times SYMBOL has appeared in file across
+                    unique DATE1 values (pre-calculated EP recurrence count)
+                    Use this directly — do NOT recount from rows.
+
+52W HIGH LOOKUP:
+  If file contains column 52W_High → use it directly.
+  If not → web-search "[SYMBOL] NSE 52-week high" for each stock
+  and record the value. Flag as "web-fetched" in output.
+
+If file structure differs from above, state what you find before proceeding.
+
+════════════════════════════════════════════════════════
+STEP 2 — SECTOR LINKAGE CHECK
+════════════════════════════════════════════════════════
+For each SYMBOL in today's EP list:
+
+A. Identify sector:
+   Web-search "[SYMBOL] NSE sector" to determine the stock's sector
+   and the corresponding NSE sectoral index
+   (e.g. Nifty Auto, Nifty Bank, Nifty IT, Nifty Pharma, etc.)
+
+B. Check sectoral index performance on DATE1:
+   Web-search "[NSE sectoral index] performance [DATE1]"
+
+C. Check 1–2 peer stocks in same sector for price action on DATE1
+
+D. Classify as one of:
+   SECTOR ALIGNED = sectoral index up >1% AND at least one peer showing
+                    strength on the same day
+   THEMATIC       = move aligns with a broader market theme
+                    (e.g. defence capex, AI infrastructure, PLI tailwind)
+                    even if sectoral index not yet reflecting it
+                    → state the theme explicitly
+   ISOLATED       = sectoral index flat/down AND no peer strength visible
+
+════════════════════════════════════════════════════════
+STEP 3 — CATALYST IDENTIFICATION
+════════════════════════════════════════════════════════
+For each SYMBOL:
+  Search window = [DATE1 - 2 days] to [DATE1 + 1 day] ONLY
+  Do NOT use news outside this window.
+
+  Search query: "[SYMBOL] [company name] news [DATE1]"
+  Also check: NSE announcements, BSE filings for the same window.
+
+Classify catalyst as one or more of:
+  Earnings Beat | Debt Reduction | Regulatory Event |
+  New Business Opportunity | Updated Guidance | M&A |
+  Significant Acquisition | Buyback | Open Offer | Delisting |
+  Broker Report / Upgrade | Tax Reversal | Case Dropped |
+  No Known Event
+
+Catalyst Description = one-line factual summary of the event.
+If No Known Event: write "Price action only — monitor for delayed disclosure."
+
+════════════════════════════════════════════════════════
+STEP 4 — PRIORITY SCORING
+════════════════════════════════════════════════════════
+Score each stock out of 10. Use pre-calculated columns where available.
+
+SCORING RULES:
+  Vol_Ratio >= 10                          → +3 pts
+  Vol_Ratio 5 to 9.99                      → +2 pts
+  Sector Alignment = ALIGNED or THEMATIC   → +2 pts
+  Known Catalyst (not "No Known Event")    → +2 pts
+  Appearance_Count >= 3                    → +2 pts
+  CLOSE within 10% of 52W High             → +1 pt
+    i.e. CLOSE >= 52W_High × 0.90
+  No Known Event                           → -1 pt
+  Sector Alignment = ISOLATED              → -1 pt
+
+EP RECURRENCE INTERPRETATION (from Appearance_Count):
+  1     = First EP — new signal, watch carefully
+  2     = Repeat EP — moderate conviction
+  3–5   = High recurrence — strong accumulation pattern
+  6+    = Very high recurrence — likely institutional interest
+
+Priority Rank = sort all today's EP stocks by Priority Score descending.
+
+════════════════════════════════════════════════════════
+STEP 5 — OUTPUT
+════════════════════════════════════════════════════════
+Produce output as a single downloadable file (CSV or markdown)
+named: EP_Output_[DATE1].md
+
+─────────────────────────────────────────
+TABLE A: SIGNAL QUALITY
+Sorted by Priority Score descending. One row per EP stock.
+─────────────────────────────────────────
+| Rank | Date of EP | Symbol | % Change | Vol Ratio | Catalyst | Catalyst Description | Sector | Sector Alignment | EP Recurrence | Priority Score |
+
+Column definitions:
+  Rank             = Priority rank (1 = highest score)
+  Date of EP       = DATE1
+  Symbol           = SYMBOL
+  % Change         = Price_Change_% from file (pre-calculated)
+  Vol Ratio        = Vol_Ratio from file (pre-calculated), display as [X.X]x
+  Catalyst         = from Step 3 taxonomy
+  Catalyst Desc    = one-line event summary from Step 3
+  Sector           = sector identified in Step 2
+  Sector Alignment = [Aligned / Thematic: {theme} / Isolated]
+  EP Recurrence    = Appearance_Count with label
+                     e.g. "3 (High recurrence)"
+  Priority Score   = from Step 4, out of 10
+
+─────────────────────────────────────────
+TABLE B: PER-STOCK VERDICT
+One block per stock, in same rank order as Table A.
+─────────────────────────────────────────
+Stock: [SYMBOL] | Rank [N] | Score [X/10]
+
+| Dimension        | Assessment                                       |
+|------------------|--------------------------------------------------|
+| Move quality     | [Real / Speculative / Needs monitoring]          |
+| Catalyst quality | [Strong / Weak / None — price action only]       |
+| Sector context   | [Aligned / Thematic / Isolated]                  |
+| EP recurrence    | [First / Repeat / High / Very High]              |
+| vs 52W High      | [At high / Within 10% / Mid range / Low range]  |
+| Next action      | [→ Track B FA research / Watch D+1 / Skip]      |
+| Watch trigger    | [What would upgrade this to Track B tomorrow?]  |
+
+─────────────────────────────────────────
+TABLE C: DAY SUMMARY
+─────────────────────────────────────────
+| Metric                              | Value |
+|-------------------------------------|-------|
+| EP Date                             |       |
+| Total EPs today                     |       |
+| Sector Aligned EPs                  |       |
+| Thematic EPs                        |       |
+| Isolated EPs                        |       |
+| EPs with known catalyst             |       |
+| EPs with no known catalyst          |       |
+| High recurrence EPs (3+)            |       |
+| Recommended for Track B (Score 6+)  |       |
+| Top priority stock today            |       |
+| Broad market context (Nifty today)  |       |
+
+════════════════════════════════════════════════════════
+OPERATING RULES
+════════════════════════════════════════════════════════
+1. Use pre-calculated columns (Vol_Ratio, Price_Change_%, Appearance_Count)
+   directly from the file. Do not recalculate.
+2. News search is strictly bounded to DATE1 ±2 days. No exceptions.
+3. "Watch D+1" = if same stock appears in tomorrow's EP file with
+   volume confirmation → upgrade to Track B immediately, regardless of score.
+4. Score >= 6 with known catalyst = recommend for Track B.
+   Score >= 6 without catalyst = Watch D+1 before Track B.
+   Score <= 4 = Skip unless Appearance_Count >= 5.
+5. Appearance_Count >= 3 + Sector Aligned = highest conviction setup.
+   Always recommend these for Track B regardless of other factors.
+6. If today's EP list is empty → output "No EPs on [DATE1]" and stop.
