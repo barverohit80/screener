@@ -70,6 +70,8 @@ def run_ep_d1_performance_tracker(days_back=70):
         ep_date = row['DATE']
         ep_date_str = ep_date.strftime('%Y-%m-%d')
         ep_close = float(row['CLOSE'])
+        ep_prev = float(row.get('PREV', ep_close))
+        ep_gain_rs = round(ep_close - ep_prev, 2)
         ep_change_pct = float(row.get('Price_Change_%', 0))
         vol_ratio = float(row.get('Vol_Ratio', 0))
 
@@ -85,19 +87,22 @@ def run_ep_d1_performance_tracker(days_back=70):
             d1_close = float(d1_row['CLOSE'])
             d1_volume = int(d1_row['VOLUME'])
 
+            # Calculation based on EP Prev (Day T-1) and EP Close (Day T)
+            pullback_rs = round(ep_close - d1_low, 2)
+            pullback_pct_of_ep_gain = round((pullback_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 0.0
+            drop_pct_from_ep_close = round(((ep_close - d1_low) / ep_close) * 100, 2)
             d1_return_pct = round(((d1_close - ep_close) / ep_close) * 100, 2)
-            d1_max_pullback_pct = round(((ep_close - d1_low) / ep_close) * 100, 2)
 
-            # Evaluate D+1 Status
-            if d1_max_pullback_pct > 5.0 or d1_return_pct < -5.0:
+            # Evaluate D+1 Status: max fallen 4% of EP day gain -> GREEN, fallen > 5% -> RED
+            if pullback_pct_of_ep_gain > 5.0 or drop_pct_from_ep_close > 5.0:
                 status = 'RED'
-                remarks = f"Fell >5% on D+1 (Max Pullback: {d1_max_pullback_pct}%)"
-            elif d1_max_pullback_pct <= 4.0 and d1_return_pct >= -4.0:
+                remarks = f"Fell >5% (Pullback of EP Gain: {pullback_pct_of_ep_gain}%)"
+            elif pullback_pct_of_ep_gain <= 4.0 or drop_pct_from_ep_close <= 4.0:
                 status = 'GREEN'
-                remarks = f"Held gain (Max Pullback: {d1_max_pullback_pct}%)"
+                remarks = f"Held gain (Pullback of EP Gain: {pullback_pct_of_ep_gain}%)"
             else:
                 status = 'YELLOW'
-                remarks = f"Moderate Pullback ({d1_max_pullback_pct}%)"
+                remarks = f"Moderate Pullback ({pullback_pct_of_ep_gain}%)"
         else:
             d1_date_str = 'N/A'
             d1_open = None
@@ -106,14 +111,18 @@ def run_ep_d1_performance_tracker(days_back=70):
             d1_close = None
             d1_volume = None
             d1_return_pct = None
-            d1_max_pullback_pct = None
+            pullback_rs = None
+            pullback_pct_of_ep_gain = None
+            drop_pct_from_ep_close = None
             status = 'PENDING'
             remarks = 'Awaiting D+1 Session'
 
         results.append({
             'SYMBOL': sym,
             'EP_Date': ep_date_str,
+            'EP_Prev_Close': ep_prev,
             'EP_Close': ep_close,
+            'EP_Day_Gain_Rs': ep_gain_rs,
             'EP_Gain_%': ep_change_pct,
             'EP_Vol_Ratio': vol_ratio,
             'D1_Date': d1_date_str,
@@ -122,7 +131,9 @@ def run_ep_d1_performance_tracker(days_back=70):
             'D1_Low': d1_low,
             'D1_Close': d1_close,
             'D1_Return_%': d1_return_pct,
-            'D1_Max_Pullback_%': d1_max_pullback_pct,
+            'D1_Pullback_Rs': pullback_rs,
+            'D1_Pullback_%_of_EP_Gain': pullback_pct_of_ep_gain,
+            'D1_Drop_%_from_EP_Close': drop_pct_from_ep_close,
             'Status': status,
             'Remarks': remarks
         })
