@@ -10,6 +10,7 @@ from episodic_pivot_supabase import run_episodic_pivot_db_screener, get_db_engin
 from download_nse_52wk import check_nse_report
 from run_llm_screener import analyze_with_gemini, send_telegram_markdown
 from ep_d1_performance_tracker import run_ep_d1_performance_tracker
+from export_ep_json import export_ep_calendar_json
 
 # =====================================================================
 # CONFIGURATION
@@ -176,6 +177,10 @@ INPUT DATA (CSV FORMAT) - DATE: {target_date_str}
         # 6. Run D+1 Performance Tracking
         print("\nSTEP 6: Running D+1 Performance Tracking (Last 50 Days)...")
         run_ep_d1_performance_tracker()
+
+        # 7. Export Calendar JSON for GitHub Pages UI
+        print("\nSTEP 7: Exporting JSON Data for GitHub Pages Calendar UI...")
+        export_ep_calendar_json()
 
         print("\n" + "═"*60 + "\n")
     else:

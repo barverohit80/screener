@@ -46,6 +46,14 @@ jobs:
         run: |
           python master_screener.py
 
+      - name: Commit & Publish GitHub Pages Calendar Data
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add docs/data/ep_calendar_data.json
+          git status
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update GitHub Pages EP Calendar JSON data" && git push)
+
       - name: Upload Output Artifacts
         uses: actions/upload-artifact@v4
         if: always()
