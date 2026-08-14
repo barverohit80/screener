@@ -88,21 +88,28 @@ def run_ep_d1_performance_tracker(days_back=70):
             d1_volume = int(d1_row['VOLUME'])
 
             # Calculation based on EP Prev (Day T-1) and EP Close (Day T)
-            pullback_rs = round(ep_close - d1_low, 2)
-            pullback_pct_of_ep_gain = round((pullback_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 0.0
-            drop_pct_from_ep_close = round(((ep_close - d1_low) / ep_close) * 100, 2)
+            d1_close_loss_rs = round(ep_close - d1_close, 2)
+            d1_loss_pct_of_ep_gain = round((d1_close_loss_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 0.0
+            
+            d1_low_pullback_rs = round(ep_close - d1_low, 2)
+            d1_low_pullback_pct_of_ep_gain = round((d1_low_pullback_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 0.0
+            
             d1_return_pct = round(((d1_close - ep_close) / ep_close) * 100, 2)
+            drop_pct_from_ep_close = round(((ep_close - d1_low) / ep_close) * 100, 2)
 
-            # Evaluate D+1 Status: max fallen 4% of EP day gain -> GREEN, fallen > 5% -> RED
-            if pullback_pct_of_ep_gain > 5.0 or drop_pct_from_ep_close > 5.0:
+            # Rule:
+            # GREEN: D+1 Close is positive (d1_close >= ep_close) OR lost <= 4% of EP Day Gain (d1_loss_pct_of_ep_gain <= 4.0)
+            # RED: Lost > 5% of EP Day Gain (d1_loss_pct_of_ep_gain > 5.0) or D+1 drop > 5%
+            # YELLOW: Lost between 4% and 5% of EP Day Gain
+            if d1_loss_pct_of_ep_gain > 5.0 or d1_return_pct < -5.0:
                 status = 'RED'
-                remarks = f"Fell >5% (Pullback of EP Gain: {pullback_pct_of_ep_gain}%)"
-            elif pullback_pct_of_ep_gain <= 4.0 or drop_pct_from_ep_close <= 4.0:
+                remarks = f"Fell >5% (Lost {d1_loss_pct_of_ep_gain}% of EP Gain on D+1 Close)"
+            elif d1_loss_pct_of_ep_gain <= 4.0 or d1_close >= ep_close:
                 status = 'GREEN'
-                remarks = f"Held gain (Pullback of EP Gain: {pullback_pct_of_ep_gain}%)"
+                remarks = f"GREEN: Positive or lost <=4% of EP Gain ({d1_loss_pct_of_ep_gain}% of gain lost)"
             else:
                 status = 'YELLOW'
-                remarks = f"Moderate Pullback ({pullback_pct_of_ep_gain}%)"
+                remarks = f"YELLOW: Lost between 4% and 5% of EP Gain ({d1_loss_pct_of_ep_gain}%)"
         else:
             d1_date_str = 'N/A'
             d1_open = None
