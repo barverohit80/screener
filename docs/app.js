@@ -185,31 +185,78 @@ function renderSelectedDateDetails(dateStr) {
   selectedDateSubheading.textContent = `Breakout stocks identified on ${dateStr} with D+1 Retained EP Gain metrics`;
 
   if (epList.length === 0) {
-    epTableBody.innerHTML = `<tr><td colspan="10" class="empty-msg">No stocks match the current filter or search criteria for ${dateStr}.</td></tr>`;
+    epTableBody.innerHTML = `<tr><td colspan="12" class="empty-msg">No stocks match the current filter or search criteria for ${dateStr}.</td></tr>`;
     return;
   }
 
-  epTableBody.innerHTML = epList.map(ep => {
+  epTableBody.innerHTML = epList.map((ep, idx) => {
     const statusClass = `badge-${ep.d1_status.toLowerCase()}`;
     const retainedGainText = ep.d1_retained_gain_pct !== null ? `${ep.d1_retained_gain_pct}%` : 'N/A';
-    const returnText = ep.d1_return_pct !== null ? `${ep.d1_return_pct > 0 ? '+' : ''}${ep.d1_return_pct}%` : 'N/A';
     const d1CloseText = ep.d1_close ? `₹${ep.d1_close.toFixed(2)}` : 'N/A';
+    const formattedVol = ep.volume ? ep.volume.toLocaleString('en-IN') : 'N/A';
+    const formattedSmaVol = ep.sma_vol_50 ? Math.round(ep.sma_vol_50).toLocaleString('en-IN') : 'N/A';
+    const delivPerText = ep.deliv_per ? `${ep.deliv_per}%` : 'N/A';
 
     return `
-      <tr>
+      <tr class="stock-row" data-idx="${idx}">
         <td class="symbol-cell">${ep.symbol}</td>
         <td>₹${ep.close.toFixed(2)}</td>
         <td style="color: var(--accent-green); font-weight: 600;">+${ep.change_pct}%</td>
-        <td>${ep.vol_ratio}x</td>
-        <td><span class="badge ${ep.deliv_trend === 'GREEN' ? 'badge-green' : 'badge-yellow'}">${ep.deliv_trend}</span></td>
+        <td style="color: var(--accent-blue); font-weight: 700;">${ep.vol_ratio}x</td>
+        <td>${formattedVol}</td>
+        <td>${formattedSmaVol}</td>
+        <td>${delivPerText}</td>
         <td>${ep.d1_date || 'N/A'}</td>
         <td>${d1CloseText}</td>
-        <td style="color: ${ep.d1_return_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}; font-weight: 600;">${returnText}</td>
         <td style="font-weight: 700; color: ${ep.d1_retained_gain_pct >= 96 ? 'var(--accent-green)' : (ep.d1_retained_gain_pct < 95 ? 'var(--accent-red)' : 'var(--accent-yellow)')};">${retainedGainText}</td>
         <td><span class="badge ${statusClass}">${ep.d1_status}</span></td>
+        <td><button class="view-btn" onclick="openStockModal('${dateStr}', '${ep.symbol}')">Details 🔍</button></td>
       </tr>
     `;
   }).join('');
+}
+
+// Open Stock Details Modal
+function openStockModal(dateStr, symbol) {
+  const dayData = appData.calendar[dateStr];
+  if (!dayData) return;
+  const ep = dayData.ep_list.find(e => e.symbol === symbol);
+  if (!ep) return;
+
+  document.getElementById('modal-symbol').textContent = ep.symbol;
+  
+  const statusBadge = document.getElementById('modal-status-badge');
+  statusBadge.textContent = ep.d1_status;
+  statusBadge.className = `badge badge-${ep.d1_status.toLowerCase()}`;
+
+  // Breakout Day Details
+  document.getElementById('m-ep-date').textContent = dateStr;
+  document.getElementById('m-ep-close').textContent = `₹${ep.close.toFixed(2)}`;
+  document.getElementById('m-ep-prev').textContent = `₹${ep.prev_close.toFixed(2)}`;
+  document.getElementById('m-ep-change').textContent = `+${ep.change_pct}%`;
+  document.getElementById('m-ep-vol').textContent = ep.volume ? ep.volume.toLocaleString('en-IN') : 'N/A';
+  document.getElementById('m-ep-smavol').textContent = ep.sma_vol_50 ? Math.round(ep.sma_vol_50).toLocaleString('en-IN') : 'N/A';
+  document.getElementById('m-ep-volratio').textContent = `${ep.vol_ratio}x Avg Vol`;
+  document.getElementById('m-ep-ohl').textContent = `O: ₹${ep.open_price.toFixed(2)} | H: ₹${ep.high_price.toFixed(2)} | L: ₹${ep.low_price.toFixed(2)}`;
+  document.getElementById('m-ep-deliv').textContent = ep.deliv_per ? `${ep.deliv_per}% (${ep.deliv_trend})` : 'N/A';
+
+  // D+1 Details
+  document.getElementById('m-d1-date').textContent = ep.d1_date || 'N/A';
+  document.getElementById('m-d1-close').textContent = ep.d1_close ? `₹${ep.d1_close.toFixed(2)}` : 'N/A';
+  document.getElementById('m-d1-ohl').textContent = ep.d1_open ? `O: ₹${ep.d1_open.toFixed(2)} | H: ₹${ep.d1_high.toFixed(2)} | L: ₹${ep.d1_low.toFixed(2)}` : 'N/A';
+  document.getElementById('m-d1-return').textContent = ep.d1_return_pct !== null ? `${ep.d1_return_pct > 0 ? '+' : ''}${ep.d1_return_pct}%` : 'N/A';
+  document.getElementById('m-d1-retained').textContent = ep.d1_retained_gain_pct !== null ? `${ep.d1_retained_gain_pct}%` : 'N/A';
+  document.getElementById('m-d1-eval').textContent = ep.d1_status === 'GREEN' ? '🟢 GREEN: Retained ≥96% of EP Gain' : (ep.d1_status === 'RED' ? '🔴 RED: Retained <95% of EP Gain' : (ep.d1_status === 'YELLOW' ? '🟡 YELLOW: Retained 95-96% of EP Gain' : '⏳ PENDING'));
+
+  // External Chart Links
+  document.getElementById('tradingview-link').href = `https://www.tradingview.com/chart/?symbol=NSE:${ep.symbol}`;
+  document.getElementById('nse-link').href = `https://www.nseindia.com/get-quotes/equity?symbol=${ep.symbol}`;
+
+  document.getElementById('stock-modal').classList.add('active');
+}
+
+function closeStockModal() {
+  document.getElementById('stock-modal').classList.remove('active');
 }
 
 // Event Listeners
@@ -257,6 +304,11 @@ function setupEventListeners() {
   symbolSearchInput.addEventListener('input', (e) => {
     searchQuery = e.target.value;
     if (selectedDateStr) renderSelectedDateDetails(selectedDateStr);
+  });
+
+  document.getElementById('modal-close-btn').addEventListener('click', closeStockModal);
+  document.getElementById('stock-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'stock-modal') closeStockModal();
   });
 }
 

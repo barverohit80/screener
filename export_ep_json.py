@@ -70,8 +70,10 @@ def export_ep_calendar_json():
         if not sub.empty:
             d1_row = sub.iloc[0]
             d1_date_str = d1_row['DATE'].strftime('%Y-%m-%d')
-            d1_close = float(d1_row['CLOSE'])
+            d1_open = float(d1_row['OPEN'])
+            d1_high = float(d1_row['HIGH'])
             d1_low = float(d1_row['LOW'])
+            d1_close = float(d1_row['CLOSE'])
             
             d1_retained_gain_rs = round(d1_close - ep_prev, 2)
             d1_retained_gain_pct = round((d1_retained_gain_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 100.0
@@ -86,8 +88,10 @@ def export_ep_calendar_json():
 
             d1_lookup[key] = {
                 'd1_date': d1_date_str,
-                'd1_close': d1_close,
+                'd1_open': d1_open,
+                'd1_high': d1_high,
                 'd1_low': d1_low,
+                'd1_close': d1_close,
                 'd1_return_pct': d1_return_pct,
                 'd1_retained_gain_pct': d1_retained_gain_pct,
                 'status': status
@@ -95,8 +99,10 @@ def export_ep_calendar_json():
         else:
             d1_lookup[key] = {
                 'd1_date': 'N/A',
-                'd1_close': None,
+                'd1_open': None,
+                'd1_high': None,
                 'd1_low': None,
+                'd1_close': None,
                 'd1_return_pct': None,
                 'd1_retained_gain_pct': None,
                 'status': 'PENDING'
@@ -117,13 +123,23 @@ def export_ep_calendar_json():
             ep_list.append({
                 'symbol': sym,
                 'prev_close': float(row.get('PREV', 0)),
+                'open_price': float(row.get('OPEN', 0)),
+                'high_price': float(row.get('HIGH', 0)),
+                'low_price': float(row.get('LOW', 0)),
                 'close': float(row.get('CLOSE', 0)),
                 'change_pct': float(row.get('Price_Change_%', 0)),
                 'vol_ratio': float(row.get('Vol_Ratio', 0)),
                 'volume': int(row.get('VOLUME', 0)),
+                'sma_vol_50': float(row.get('SMA_Vol_50', 0)),
+                'deliv_qty': int(row.get('DELIV_QTY', 0)),
+                'deliv_per': float(row.get('DELIV_PER', 0)),
+                'turnover_lacs': float(row.get('TURNOVER_LACS', 0)),
                 'deliv_trend': str(row.get('Deliv_Trend', 'NEW')),
                 'weekday': str(row.get('Weekday', '')),
                 'd1_date': d1_info.get('d1_date'),
+                'd1_open': d1_info.get('d1_open'),
+                'd1_high': d1_info.get('d1_high'),
+                'd1_low': d1_info.get('d1_low'),
                 'd1_close': d1_info.get('d1_close'),
                 'd1_return_pct': d1_info.get('d1_return_pct'),
                 'd1_retained_gain_pct': d1_info.get('d1_retained_gain_pct'),

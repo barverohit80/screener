@@ -109,19 +109,21 @@
             <tr>
               <th>Symbol</th>
               <th>EP Close (₹)</th>
-              <th>Breakout %</th>
-              <th>Volume Ratio</th>
-              <th>Delivery Trend</th>
+              <th>Change %</th>
+              <th>Vol Ratio</th>
+              <th>Volume</th>
+              <th>50-Day SMA Vol</th>
+              <th>Delivery %</th>
               <th>D+1 Date</th>
               <th>D+1 Close (₹)</th>
-              <th>D+1 Return %</th>
               <th>Retained EP Gain %</th>
-              <th>D+1 Status</th>
+              <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="ep-table-body">
             <tr>
-              <td colspan="10" class="empty-msg">Click a date in the calendar above to view Episodic Pivots.</td>
+              <td colspan="12" class="empty-msg">Click a date in the calendar above to view Episodic Pivots.</td>
             </tr>
           </tbody>
         </table>
@@ -129,6 +131,95 @@
     </section>
 
   </main>
+
+  <!-- Interactive Stock Details Modal -->
+  <div class="modal-overlay" id="stock-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 class="modal-symbol" id="modal-symbol">SYMBOL</h2>
+          <span class="badge" id="modal-status-badge">GREEN</span>
+        </div>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="modal-section-title">⚡ Episodic Pivot Breakout Details (Day T)</div>
+        <div class="modal-grid">
+          <div class="modal-info-item">
+            <span class="info-label">Breakout Date</span>
+            <span class="info-value" id="m-ep-date">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Closing Price</span>
+            <span class="info-value" id="m-ep-close">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Previous Close</span>
+            <span class="info-value" id="m-ep-prev">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Price Change %</span>
+            <span class="info-value highlight-green" id="m-ep-change">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Breakout Volume</span>
+            <span class="info-value" id="m-ep-vol">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">50-Day SMA Volume</span>
+            <span class="info-value" id="m-ep-smavol">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Volume Surge Ratio</span>
+            <span class="info-value highlight-blue" id="m-ep-volratio">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Day Range (O / H / L)</span>
+            <span class="info-value" id="m-ep-ohl">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Delivery %</span>
+            <span class="info-value" id="m-ep-deliv">-</span>
+          </div>
+        </div>
+
+        <div class="modal-section-title" style="margin-top: 1.25rem;">📈 Next Trading Day Performance (Day T+1)</div>
+        <div class="modal-grid">
+          <div class="modal-info-item">
+            <span class="info-label">D+1 Trading Date</span>
+            <span class="info-value" id="m-d1-date">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">D+1 Closing Price</span>
+            <span class="info-value" id="m-d1-close">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">D+1 Day Range (O / H / L)</span>
+            <span class="info-value" id="m-d1-ohl">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">D+1 Return %</span>
+            <span class="info-value" id="m-d1-return">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Retained EP Gain %</span>
+            <span class="info-value" id="m-d1-retained">-</span>
+          </div>
+          <div class="modal-info-item">
+            <span class="info-label">Final Evaluation</span>
+            <span class="info-value" id="m-d1-eval">-</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <a href="#" target="_blank" class="external-link-btn" id="tradingview-link">📊 View Chart on TradingView</a>
+          <a href="#" target="_blank" class="external-link-btn secondary" id="nse-link">🏛️ View Quote on NSE India</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <footer class="footer">
     <p>Episodic Pivot Screener Framework • Automated Daily Execution at 4:00 PM IST</p>
