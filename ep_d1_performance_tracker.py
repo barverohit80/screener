@@ -87,29 +87,28 @@ def run_ep_d1_performance_tracker(days_back=70):
             d1_close = float(d1_row['CLOSE'])
             d1_volume = int(d1_row['VOLUME'])
 
-            # Calculation based on EP Prev (Day T-1) and EP Close (Day T)
-            d1_close_loss_rs = round(ep_close - d1_close, 2)
-            d1_loss_pct_of_ep_gain = round((d1_close_loss_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 0.0
+            # Retained EP Gain calculation based on EP Prev (Day T-1) and D+1 Close (Day T+1)
+            d1_retained_gain_rs = round(d1_close - ep_prev, 2)
+            d1_retained_gain_pct = round((d1_retained_gain_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 100.0
             
-            d1_low_pullback_rs = round(ep_close - d1_low, 2)
-            d1_low_pullback_pct_of_ep_gain = round((d1_low_pullback_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 0.0
+            d1_low_retained_rs = round(d1_low - ep_prev, 2)
+            d1_low_retained_gain_pct = round((d1_low_retained_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 100.0
             
             d1_return_pct = round(((d1_close - ep_close) / ep_close) * 100, 2)
-            drop_pct_from_ep_close = round(((ep_close - d1_low) / ep_close) * 100, 2)
 
             # Rule:
-            # GREEN: D+1 Close is positive (d1_close >= ep_close) OR lost <= 4% of EP Day Gain (d1_loss_pct_of_ep_gain <= 4.0)
-            # RED: Lost > 5% of EP Day Gain (d1_loss_pct_of_ep_gain > 5.0) or D+1 drop > 5%
-            # YELLOW: Lost between 4% and 5% of EP Day Gain
-            if d1_loss_pct_of_ep_gain > 5.0 or d1_return_pct < -5.0:
+            # GREEN: Retains >= 96.0% of EP Day Gain (or D1_Close >= EP_Close)
+            # RED: Retains < 95.0% of EP Day Gain (or D1_Return < -5.0%)
+            # YELLOW: Retains between 95.0% and 96.0% of EP Day Gain
+            if d1_retained_gain_pct < 95.0 or d1_return_pct < -5.0:
                 status = 'RED'
-                remarks = f"Fell >5% (Lost {d1_loss_pct_of_ep_gain}% of EP Gain on D+1 Close)"
-            elif d1_loss_pct_of_ep_gain <= 4.0 or d1_close >= ep_close:
+                remarks = f"RED: Retained only {d1_retained_gain_pct}% of EP Gain on D+1 Close"
+            elif d1_retained_gain_pct >= 96.0 or d1_close >= ep_close:
                 status = 'GREEN'
-                remarks = f"GREEN: Positive or lost <=4% of EP Gain ({d1_loss_pct_of_ep_gain}% of gain lost)"
+                remarks = f"GREEN: Retained {d1_retained_gain_pct}% of EP Gain on D+1 Close"
             else:
                 status = 'YELLOW'
-                remarks = f"YELLOW: Lost between 4% and 5% of EP Gain ({d1_loss_pct_of_ep_gain}%)"
+                remarks = f"YELLOW: Retained between 95% and 96% of EP Gain ({d1_retained_gain_pct}%)"
         else:
             d1_date_str = 'N/A'
             d1_open = None
@@ -118,9 +117,9 @@ def run_ep_d1_performance_tracker(days_back=70):
             d1_close = None
             d1_volume = None
             d1_return_pct = None
-            pullback_rs = None
-            pullback_pct_of_ep_gain = None
-            drop_pct_from_ep_close = None
+            d1_retained_gain_rs = None
+            d1_retained_gain_pct = None
+            d1_low_retained_gain_pct = None
             status = 'PENDING'
             remarks = 'Awaiting D+1 Session'
 
@@ -138,9 +137,9 @@ def run_ep_d1_performance_tracker(days_back=70):
             'D1_Low': d1_low,
             'D1_Close': d1_close,
             'D1_Return_%': d1_return_pct,
-            'D1_Pullback_Rs': pullback_rs,
-            'D1_Pullback_%_of_EP_Gain': pullback_pct_of_ep_gain,
-            'D1_Drop_%_from_EP_Close': drop_pct_from_ep_close,
+            'D1_Retained_EP_Gain_Rs': d1_retained_gain_rs,
+            'D1_Retained_EP_Gain_%': d1_retained_gain_pct,
+            'D1_Low_Retained_EP_Gain_%': d1_low_retained_gain_pct,
             'Status': status,
             'Remarks': remarks
         })
