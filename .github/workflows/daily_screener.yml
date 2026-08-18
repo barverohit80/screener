@@ -53,6 +53,17 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python master_screener.py
+        continue-on-error: true
+
+      - name: Check for errors and display logs
+        if: failure()
+        run: |
+          echo "❌ Screener pipeline failed. Checking for logs..."
+          if [ -f "output/error.log" ]; then
+            echo "Error log contents:"
+            cat output/error.log
+          fi
+          exit 1
 
       - name: Commit & Publish GitHub Pages Calendar Data
         run: |
