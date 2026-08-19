@@ -18,8 +18,8 @@ const MONTH_NAMES = [
 const CATEGORY_META = {
   new_eps: {
     icon: '🌟',
-    title: 'Table 1: New Episodic Pivots',
-    desc: 'Fresh breakout stocks that triggered an Episodic Pivot on the latest trading day with no prior breakout in the last 50 days.',
+    title: "Table 1: Today's Episodic Pivots",
+    desc: 'All stocks that triggered an Episodic Pivot on the latest market session, with fresh 1st-time vs repeat breakout classification.',
     badgeClass: 'tab-new'
   },
   persistent_eps: {
@@ -207,6 +207,7 @@ function renderCategoryTable() {
         <th>Volume</th>
         <th>50-SMA Vol</th>
         <th>Delivery %</th>
+        <th>Breakout Type</th>
         <th>D+1 Status</th>
         <th>Action</th>
       </tr>
@@ -257,13 +258,17 @@ function renderCategoryTable() {
 
   // 2. Render Table Rows
   if (list.length === 0) {
-    categoryTableBody.innerHTML = `<tr><td colspan="10" class="empty-msg">No stocks found in ${CATEGORY_META[currentCategory].title}.</td></tr>`;
+    categoryTableBody.innerHTML = `<tr><td colspan="11" class="empty-msg">No stocks found in ${CATEGORY_META[currentCategory].title}.</td></tr>`;
     return;
   }
 
   categoryTableBody.innerHTML = list.map((item, idx) => {
     if (currentCategory === 'new_eps') {
       const statusBadge = `badge-${(item.d1_status_latest || 'PENDING').toLowerCase()}`;
+      const breakoutTypeHtml = item.appearance_count === 1
+        ? `<span class="badge" style="background-color: rgba(56, 189, 248, 0.15); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.3);">🌟 Fresh (1st Hit)</span>`
+        : `<span class="badge" style="background-color: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">🔁 Repeat (${item.appearance_count}x)</span>`;
+
       return `
         <tr class="stock-row">
           <td class="symbol-cell">${item.symbol}</td>
@@ -274,6 +279,7 @@ function renderCategoryTable() {
           <td>${item.ep1_volume ? item.ep1_volume.toLocaleString('en-IN') : 'N/A'}</td>
           <td>${item.ep1_sma_vol ? Math.round(item.ep1_sma_vol).toLocaleString('en-IN') : 'N/A'}</td>
           <td>${item.ep1_deliv_per ? `${item.ep1_deliv_per}%` : 'N/A'}</td>
+          <td>${breakoutTypeHtml}</td>
           <td><span class="badge ${statusBadge}">${item.d1_status_latest || 'PENDING'}</span></td>
           <td><button class="view-btn" onclick="openCategoryStockModal('${item.symbol}')">Details 🔍</button></td>
         </tr>

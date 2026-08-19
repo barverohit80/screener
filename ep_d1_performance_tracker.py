@@ -227,8 +227,8 @@ def run_ep_d1_performance_tracker(days_back=70):
             'Days_Active': len(post_ep1_bhav)
         }
 
-        # 1. New EPs: Latest EP date & 1st appearance
-        if latest_ep['DATE'] == latest_ep_date and appearance_count == 1:
+        # 1. Today's EPs: Latest EP date (both fresh and repeat breakouts)
+        if latest_ep['DATE'] == latest_ep_date:
             new_eps_records.append(base_dict)
 
         # 2. Persistent EPs: >= 2 hits in 50 days

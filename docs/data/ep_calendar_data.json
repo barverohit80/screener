@@ -1,12 +1,12 @@
 {
-  "last_updated": "2026-08-19 21:56:33 IST",
+  "last_updated": "2026-08-19 22:24:11 IST",
   "latest_market_date": "2026-08-19",
   "latest_ep_date": "2026-08-19",
   "total_dates": 58,
   "total_eps_overall": 383,
   "total_eps_50d": 334,
   "summary": {
-    "new_count": 1,
+    "new_count": 2,
     "persistent_count": 54,
     "sustained_count": 112,
     "fizzled_count": 55,
@@ -15,6 +15,41 @@
   },
   "tables": {
     "new_eps": [
+      {
+        "symbol": "ORIENTHOT",
+        "appearance_count": 3,
+        "ep_history_dates": [
+          "2026-06-23",
+          "2026-07-20",
+          "2026-08-19"
+        ],
+        "ep1_date": "2026-06-23",
+        "ep1_prev": 120.33,
+        "ep1_open": 120.11,
+        "ep1_high": 144.39,
+        "ep1_low": 115.8,
+        "ep1_close": 141.44,
+        "ep1_change_pct": 17.54,
+        "ep1_vol_ratio": 33.06,
+        "ep1_volume": 27279137,
+        "ep1_sma_vol": 825032.0,
+        "ep1_deliv_per": 11.44,
+        "latest_ep_date": "2026-08-19",
+        "latest_ep_close": 139.5,
+        "latest_ep_change_pct": 15.09,
+        "latest_ep_vol_ratio": 20.07,
+        "latest_deliv_trend": "GREEN",
+        "current_price": 139.5,
+        "current_date": "2026-08-19",
+        "max_high_since_ep1": 148.8,
+        "min_low_since_ep1": 115.8,
+        "days_since_ep1": 42,
+        "current_return_since_ep1_pct": -1.37,
+        "retained_ep1_gain_pct": 90.81,
+        "gain_lost_pct": 9.19,
+        "d1_status_ep1": "RED",
+        "d1_status_latest": "PENDING"
+      },
       {
         "symbol": "NILKAMAL",
         "appearance_count": 1,

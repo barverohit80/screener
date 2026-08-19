@@ -239,9 +239,9 @@ def export_ep_calendar_json():
             'd1_status_latest': d1_info_latest.get('status', 'PENDING')
         }
         
-        # ─── 1. TABLE 1: NEW EPISODIC PIVOTS ───
-        # Criteria: EP on the latest available EP date AND appeared only 1 time in 50 days
-        if latest_ep['DATE'] == global_latest_ep_date and appearance_count == 1:
+        # ─── 1. TABLE 1: TODAY'S / NEW EPISODIC PIVOTS ───
+        # Criteria: Triggered an Episodic Pivot on the latest market session (both fresh and repeat breakouts)
+        if latest_ep['DATE'] == global_latest_ep_date:
             new_eps_list.append(record)
             
         # ─── 2. TABLE 2: PERSISTENT EPISODIC PIVOTS ───
@@ -260,7 +260,7 @@ def export_ep_calendar_json():
             fizzled_eps_list.append(record)
 
     # Sort each list logically
-    new_eps_list.sort(key=lambda x: x['ep1_change_pct'], reverse=True)
+    new_eps_list.sort(key=lambda x: x['latest_ep_change_pct'], reverse=True)
     persistent_eps_list.sort(key=lambda x: (x['appearance_count'], x['current_return_since_ep1_pct']), reverse=True)
     sustained_eps_list.sort(key=lambda x: x['current_return_since_ep1_pct'], reverse=True)
     fizzled_eps_list.sort(key=lambda x: x['current_return_since_ep1_pct']) # Most negative first
