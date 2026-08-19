@@ -27,8 +27,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run-screener-and-deploy:
-    name: Run Screener Pipeline & Deploy GitHub Pages
+  run-screener:
+    name: Run Episodic Pivot Master Screener
     runs-on: ubuntu-latest
 
     steps:
@@ -77,10 +77,6 @@ jobs:
         with:
           path: 'docs'
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
       - name: Upload Output Artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -88,3 +84,15 @@ jobs:
           name: screener-output
           path: output/
           retention-days: 7
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    needs: run-screener
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
