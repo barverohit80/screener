@@ -25,6 +25,32 @@ def get_db_engine():
         print(f"Error creating DB engine: {e}")
         return None
 
+def safe_float(val, default=0.0):
+    if val is None or pd.isna(val):
+        return default
+    if isinstance(val, (int, float)):
+        return float(val)
+    try:
+        s = str(val).strip().replace(',', '').replace('%', '')
+        if not s or s == '-':
+            return default
+        return float(s)
+    except (ValueError, TypeError):
+        return default
+
+def safe_int(val, default=0):
+    if val is None or pd.isna(val):
+        return default
+    if isinstance(val, (int, float)):
+        return int(val)
+    try:
+        s = str(val).strip().replace(',', '')
+        if not s or s == '-':
+            return default
+        return int(float(s))
+    except (ValueError, TypeError):
+        return default
+
 def export_ep_calendar_json():
     """
     Exports EP breakout data and D+1 performance tracking into JSON 
@@ -52,8 +78,8 @@ def export_ep_calendar_json():
         print("⚠️ No EP data found.")
         return
 
-    bhav_df['DATE'] = pd.to_datetime(bhav_df['DATE'])
-    ep_df['DATE'] = pd.to_datetime(ep_df['DATE'])
+    bhav_df['DATE'] = pd.to_datetime(bhav_df['DATE']).dt.tz_localize(None)
+    ep_df['DATE'] = pd.to_datetime(ep_df['DATE']).dt.tz_localize(None)
 
     # Build D+1 lookup table
     d1_lookup = {}
@@ -62,22 +88,22 @@ def export_ep_calendar_json():
         ep_date = row['DATE']
         ep_date_str = ep_date.strftime('%Y-%m-%d')
         key = f"{sym}_{ep_date_str}"
-        ep_close = float(row['CLOSE'])
-        ep_prev = float(row.get('PREV', ep_close))
+        ep_close = safe_float(row.get('CLOSE'))
+        ep_prev = safe_float(row.get('PREV'), ep_close)
         ep_gain_rs = ep_close - ep_prev
 
         sub = bhav_df[(bhav_df['SYMBOL'] == sym) & (bhav_df['DATE'] > ep_date)].sort_values('DATE')
         if not sub.empty:
             d1_row = sub.iloc[0]
             d1_date_str = d1_row['DATE'].strftime('%Y-%m-%d')
-            d1_open = float(d1_row['OPEN'])
-            d1_high = float(d1_row['HIGH'])
-            d1_low = float(d1_row['LOW'])
-            d1_close = float(d1_row['CLOSE'])
+            d1_open = safe_float(d1_row.get('OPEN'))
+            d1_high = safe_float(d1_row.get('HIGH'))
+            d1_low = safe_float(d1_row.get('LOW'))
+            d1_close = safe_float(d1_row.get('CLOSE'))
             
             d1_retained_gain_rs = round(d1_close - ep_prev, 2)
             d1_retained_gain_pct = round((d1_retained_gain_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 100.0
-            d1_return_pct = round(((d1_close - ep_close) / ep_close) * 100, 2)
+            d1_return_pct = round(((d1_close - ep_close) / ep_close) * 100, 2) if ep_close > 0 else 0.0
 
             if d1_retained_gain_pct < 95.0 or d1_return_pct < -5.0:
                 status = 'RED'
@@ -122,18 +148,18 @@ def export_ep_calendar_json():
 
             ep_list.append({
                 'symbol': sym,
-                'prev_close': float(row.get('PREV', 0)),
-                'open_price': float(row.get('OPEN', 0)),
-                'high_price': float(row.get('HIGH', 0)),
-                'low_price': float(row.get('LOW', 0)),
-                'close': float(row.get('CLOSE', 0)),
-                'change_pct': float(row.get('Price_Change_%', 0)),
-                'vol_ratio': float(row.get('Vol_Ratio', 0)),
-                'volume': int(row.get('VOLUME', 0)),
-                'sma_vol_50': float(row.get('SMA_Vol_50', 0)),
-                'deliv_qty': int(row.get('DELIV_QTY', 0)),
-                'deliv_per': float(row.get('DELIV_PER', 0)),
-                'turnover_lacs': float(row.get('TURNOVER_LACS', 0)),
+                'prev_close': safe_float(row.get('PREV', 0)),
+                'open_price': safe_float(row.get('OPEN', 0)),
+                'high_price': safe_float(row.get('HIGH', 0)),
+                'low_price': safe_float(row.get('LOW', 0)),
+                'close': safe_float(row.get('CLOSE', 0)),
+                'change_pct': safe_float(row.get('Price_Change_%', 0)),
+                'vol_ratio': safe_float(row.get('Vol_Ratio', 0)),
+                'volume': safe_int(row.get('VOLUME', 0)),
+                'sma_vol_50': safe_float(row.get('SMA_Vol_50', 0)),
+                'deliv_qty': safe_int(row.get('DELIV_QTY', 0)),
+                'deliv_per': safe_float(row.get('DELIV_PER', 0)),
+                'turnover_lacs': safe_float(row.get('TURNOVER_LACS', 0)),
                 'deliv_trend': str(row.get('Deliv_Trend', 'NEW')),
                 'weekday': str(row.get('Weekday', '')),
                 'd1_date': d1_info.get('d1_date'),

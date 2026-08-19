@@ -25,6 +25,32 @@ def get_db_engine():
         print(f"Error creating DB engine: {e}")
         return None
 
+def safe_float(val, default=0.0):
+    if val is None or pd.isna(val):
+        return default
+    if isinstance(val, (int, float)):
+        return float(val)
+    try:
+        s = str(val).strip().replace(',', '').replace('%', '')
+        if not s or s == '-':
+            return default
+        return float(s)
+    except (ValueError, TypeError):
+        return default
+
+def safe_int(val, default=0):
+    if val is None or pd.isna(val):
+        return default
+    if isinstance(val, (int, float)):
+        return int(val)
+    try:
+        s = str(val).strip().replace(',', '')
+        if not s or s == '-':
+            return default
+        return int(float(s))
+    except (ValueError, TypeError):
+        return default
+
 def run_ep_d1_performance_tracker(days_back=70):
     """
     Tracks D+1 performance for all Episodic Pivot stocks from the last 50+ days.
@@ -61,19 +87,19 @@ def run_ep_d1_performance_tracker(days_back=70):
         print("⚠️ No EP records found in database for the specified date range.")
         return None
 
-    bhav_df['DATE'] = pd.to_datetime(bhav_df['DATE'])
-    ep_df['DATE'] = pd.to_datetime(ep_df['DATE'])
+    bhav_df['DATE'] = pd.to_datetime(bhav_df['DATE']).dt.tz_localize(None)
+    ep_df['DATE'] = pd.to_datetime(ep_df['DATE']).dt.tz_localize(None)
 
     results = []
     for idx, row in ep_df.iterrows():
         sym = row['SYMBOL']
         ep_date = row['DATE']
         ep_date_str = ep_date.strftime('%Y-%m-%d')
-        ep_close = float(row['CLOSE'])
-        ep_prev = float(row.get('PREV', ep_close))
+        ep_close = safe_float(row.get('CLOSE'))
+        ep_prev = safe_float(row.get('PREV'), ep_close)
         ep_gain_rs = round(ep_close - ep_prev, 2)
-        ep_change_pct = float(row.get('Price_Change_%', 0))
-        vol_ratio = float(row.get('Vol_Ratio', 0))
+        ep_change_pct = safe_float(row.get('Price_Change_%', 0))
+        vol_ratio = safe_float(row.get('Vol_Ratio', 0))
 
         # Query subsequent trading sessions for this symbol
         sub = bhav_df[(bhav_df['SYMBOL'] == sym) & (bhav_df['DATE'] > ep_date)].sort_values('DATE')
@@ -81,11 +107,11 @@ def run_ep_d1_performance_tracker(days_back=70):
         if not sub.empty:
             d1_row = sub.iloc[0]
             d1_date_str = d1_row['DATE'].strftime('%Y-%m-%d')
-            d1_open = float(d1_row['OPEN'])
-            d1_high = float(d1_row['HIGH'])
-            d1_low = float(d1_row['LOW'])
-            d1_close = float(d1_row['CLOSE'])
-            d1_volume = int(d1_row['VOLUME'])
+            d1_open = safe_float(d1_row.get('OPEN'))
+            d1_high = safe_float(d1_row.get('HIGH'))
+            d1_low = safe_float(d1_row.get('LOW'))
+            d1_close = safe_float(d1_row.get('CLOSE'))
+            d1_volume = safe_int(d1_row.get('VOLUME'))
 
             # Retained EP Gain calculation based on EP Prev (Day T-1) and D+1 Close (Day T+1)
             d1_retained_gain_rs = round(d1_close - ep_prev, 2)
@@ -94,7 +120,7 @@ def run_ep_d1_performance_tracker(days_back=70):
             d1_low_retained_rs = round(d1_low - ep_prev, 2)
             d1_low_retained_gain_pct = round((d1_low_retained_rs / ep_gain_rs) * 100, 2) if ep_gain_rs > 0 else 100.0
             
-            d1_return_pct = round(((d1_close - ep_close) / ep_close) * 100, 2)
+            d1_return_pct = round(((d1_close - ep_close) / ep_close) * 100, 2) if ep_close > 0 else 0.0
 
             # Rule:
             # GREEN: Retains >= 96.0% of EP Day Gain (or D1_Close >= EP_Close)
