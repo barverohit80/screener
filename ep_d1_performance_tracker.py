@@ -172,51 +172,128 @@ def run_ep_d1_performance_tracker(days_back=70):
 
     res_df = pd.DataFrame(results)
 
-    # Calculate Summary Statistics
-    total_eps = len(res_df)
-    green_df = res_df[res_df['Status'] == 'GREEN']
-    red_df = res_df[res_df['Status'] == 'RED']
-    yellow_df = res_df[res_df['Status'] == 'YELLOW']
-    pending_df = res_df[res_df['Status'] == 'PENDING']
+    # 4-Category Multi-Day Aggregation
+    latest_ep_date = ep_df['DATE'].max()
+    unique_symbols = ep_df['SYMBOL'].unique()
 
-    print(f"📊 Summary (Last 50+ Days EP D+1 Tracking):")
-    print(f"   • Total EPs Tracked: {total_eps}")
-    print(f"   • GREEN (Holding Gain, <=4% Pullback): {len(green_df)} ({len(green_df)/total_eps*100:.1f}%)")
-    print(f"   • RED (Fell > 5%): {len(red_df)} ({len(red_df)/total_eps*100:.1f}%)")
-    print(f"   • YELLOW (Moderate Pullback 4-5%): {len(yellow_df)} ({len(yellow_df)/total_eps*100:.1f}%)")
-    print(f"   • PENDING (Awaiting D+1 Session): {len(pending_df)}")
+    new_eps_records = []
+    persistent_records = []
+    sustained_records = []
+    fizzled_records = []
+
+    for sym in unique_symbols:
+        sym_eps = ep_df[ep_df['SYMBOL'] == sym].sort_values('DATE')
+        sym_bhav = bhav_df[bhav_df['SYMBOL'] == sym].sort_values('DATE')
+        
+        if sym_eps.empty:
+            continue
+            
+        first_ep = sym_eps.iloc[0]
+        latest_ep = sym_eps.iloc[-1]
+        latest_bhav = sym_bhav.iloc[-1] if not sym_bhav.empty else None
+
+        ep1_date_str = first_ep['DATE'].strftime('%Y-%m-%d')
+        ep1_prev = safe_float(first_ep.get('PREV'))
+        ep1_close = safe_float(first_ep.get('CLOSE'))
+        ep1_gain_rs = round(ep1_close - ep1_prev, 2)
+
+        latest_ep_date_str = latest_ep['DATE'].strftime('%Y-%m-%d')
+        latest_ep_close = safe_float(latest_ep.get('CLOSE'))
+        appearance_count = len(sym_eps)
+
+        current_price = safe_float(latest_bhav.get('CLOSE')) if latest_bhav is not None else latest_ep_close
+        current_return_since_ep1_pct = round(((current_price - ep1_close) / ep1_close) * 100, 2) if ep1_close > 0 else 0.0
+        current_gain_from_base_rs = round(current_price - ep1_prev, 2)
+        retained_ep1_gain_pct = round((current_gain_from_base_rs / ep1_gain_rs) * 100, 2) if ep1_gain_rs > 0 else 100.0
+        gain_lost_pct = round(100.0 - retained_ep1_gain_pct, 2)
+
+        post_ep1_bhav = sym_bhav[sym_bhav['DATE'] >= first_ep['DATE']]
+        max_high_since_ep1 = safe_float(post_ep1_bhav['HIGH'].max()) if not post_ep1_bhav.empty else ep1_close
+
+        base_dict = {
+            'SYMBOL': sym,
+            'Appearance_Count_50d': appearance_count,
+            '1st_EP_Date': ep1_date_str,
+            '1st_EP_Base_PrevClose': ep1_prev,
+            '1st_EP_Close': ep1_close,
+            '1st_EP_Change_%': safe_float(first_ep.get('Price_Change_%')),
+            'Latest_EP_Date': latest_ep_date_str,
+            'Latest_EP_Close': latest_ep_close,
+            'Current_Price': current_price,
+            'Current_Return_Since_EP1_%': current_return_since_ep1_pct,
+            'Retained_EP1_Gain_%': retained_ep1_gain_pct,
+            'Gain_Lost_%': gain_lost_pct,
+            'Max_High_Since_EP1': max_high_since_ep1,
+            'Days_Active': len(post_ep1_bhav)
+        }
+
+        # 1. New EPs: Latest EP date & 1st appearance
+        if latest_ep['DATE'] == latest_ep_date and appearance_count == 1:
+            new_eps_records.append(base_dict)
+
+        # 2. Persistent EPs: >= 2 hits in 50 days
+        if appearance_count >= 2:
+            persistent_records.append(base_dict)
+
+        # 3. Sustained EPs: Current price >= 1st EP close
+        if current_price >= ep1_close:
+            sustained_records.append(base_dict)
+
+        # 4. Fizzled Out EPs: Current price < 1st EP Prev Close
+        if current_price < ep1_prev:
+            fizzled_records.append(base_dict)
+
+    new_eps_df = pd.DataFrame(new_eps_records)
+    persistent_df = pd.DataFrame(persistent_records)
+    sustained_df = pd.DataFrame(sustained_records)
+    fizzled_df = pd.DataFrame(fizzled_records)
+
+    total_tracked_symbols = len(unique_symbols)
+    sustained_pct = f"{(len(sustained_df)/total_tracked_symbols*100):.1f}%" if total_tracked_symbols > 0 else '0%'
+    fizzled_pct = f"{(len(fizzled_df)/total_tracked_symbols*100):.1f}%" if total_tracked_symbols > 0 else '0%'
+
+    print(f"\n📊 4-Category Performance Summary (Last 50 Days):")
+    print(f"   • 🌟 Table 1: New EPs (Latest: {latest_ep_date.strftime('%Y-%m-%d')}): {len(new_eps_df)}")
+    print(f"   • 🔁 Table 2: Persistent (≥2 Hits): {len(persistent_df)}")
+    print(f"   • 🚀 Table 3: Sustained (Holding Above EP1): {len(sustained_df)} ({sustained_pct})")
+    print(f"   • 💨 Table 4: Fizzled Out (Gains Vanished): {len(fizzled_df)} ({fizzled_pct})")
 
     # Export Multi-Sheet Excel Workbook
     os.makedirs(DAILY_SCREENER_DIR, exist_ok=True)
     excel_path = os.path.join(DAILY_SCREENER_DIR, "ep_d1_performance_50days.xlsx")
 
     summary_rows = [
-        {'Metric': 'Total EPs Tracked', 'Value': total_eps},
-        {'Metric': 'GREEN Count (Hold <= 4%)', 'Value': len(green_df)},
-        {'Metric': 'GREEN %', 'Value': f"{len(green_df)/total_eps*100:.1f}%" if total_eps > 0 else '0%'},
-        {'Metric': 'RED Count (Fell > 5%)', 'Value': len(red_df)},
-        {'Metric': 'RED %', 'Value': f"{len(red_df)/total_eps*100:.1f}%" if total_eps > 0 else '0%'},
-        {'Metric': 'YELLOW Count (4-5% Pullback)', 'Value': len(yellow_df)},
-        {'Metric': 'PENDING (Awaiting D+1)', 'Value': len(pending_df)}
+        {'Category': 'Total Unique EP Stocks (50d)', 'Count / Metric': total_tracked_symbols},
+        {'Category': '1. New EPs (Latest Session)', 'Count / Metric': len(new_eps_df)},
+        {'Category': '2. Persistent EPs (≥2 Hits)', 'Count / Metric': len(persistent_df)},
+        {'Category': '3. Sustained EPs (Holding Gains)', 'Count / Metric': f"{len(sustained_df)} ({sustained_pct})"},
+        {'Category': '4. Fizzled Out EPs (Gains Lost)', 'Count / Metric': f"{len(fizzled_df)} ({fizzled_pct})"},
+        {'Category': 'Total EP Signals Evaluated', 'Count / Metric': len(res_df)}
     ]
     summary_df = pd.DataFrame(summary_rows)
 
     with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
-        res_df.to_excel(writer, sheet_name='All EP D+1 Performance', index=False)
-        green_df.to_excel(writer, sheet_name='Green (Hold <= 4%)', index=False)
-        red_df.to_excel(writer, sheet_name='Red (Fell > 5%)', index=False)
         summary_df.to_excel(writer, sheet_name='Summary Stats', index=False)
+        if not new_eps_df.empty:
+            new_eps_df.to_excel(writer, sheet_name='1_New_EPs', index=False)
+        if not persistent_df.empty:
+            persistent_df.to_excel(writer, sheet_name='2_Persistent_EPs', index=False)
+        if not sustained_df.empty:
+            sustained_df.to_excel(writer, sheet_name='3_Sustained_EPs', index=False)
+        if not fizzled_df.empty:
+            fizzled_df.to_excel(writer, sheet_name='4_Fizzled_EPs', index=False)
+        res_df.to_excel(writer, sheet_name='All D+1 Raw Tracking', index=False)
 
     print(f"\n✅ Saved Excel report: {excel_path}")
 
     # Dispatch to Telegram
     caption = (
-        f"📊 *Episodic Pivot D+1 Performance Report (Last 50 Days)*\n\n"
-        f"• Total EPs Evaluated: {total_eps}\n"
-        f"🟢 *GREEN (Hold <=4% Pullback)*: {len(green_df)} ({len(green_df)/total_eps*100:.1f}%)\n"
-        f"🔴 *RED (Fell > 5%)*: {len(red_df)} ({len(red_df)/total_eps*100:.1f}%)\n"
-        f"🟡 *YELLOW (4-5% Pullback)*: {len(yellow_df)}\n"
-        f"⏳ *PENDING (Awaiting D+1)*: {len(pending_df)}"
+        f"📊 *Episodic Pivot 4-Category Performance Report*\n\n"
+        f"🌟 *1. New EPs ({latest_ep_date.strftime('%d-%b-%Y')})*: {len(new_eps_df)}\n"
+        f"🔁 *2. Persistent EPs (≥2 Hits in 50d)*: {len(persistent_df)}\n"
+        f"🚀 *3. Sustained EPs (Holding Above EP1)*: {len(sustained_df)} ({sustained_pct})\n"
+        f"💨 *4. Fizzled Out EPs (Gains Vanished)*: {len(fizzled_df)} ({fizzled_pct})\n\n"
+        f"📁 _Attached full Excel workbook with all 4 sheets._"
     )
     send_telegram_document(excel_path, caption=caption)
 

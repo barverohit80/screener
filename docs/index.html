@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Episodic Pivot Calendar | Screener Dashboard</title>
-  <meta name="description" content="Interactive calendar view of NSE Episodic Pivot breakout stocks with D+1 performance tracking.">
+  <title>Episodic Pivot Framework | 4-Category Screener Dashboard</title>
+  <meta name="description" content="NSE Episodic Pivot Momentum Screener with 4-Category Performance Tracking (New, Persistent, Sustained, and Fizzled Out EPs).">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
@@ -18,8 +18,8 @@
       <div class="brand">
         <span class="brand-icon">⚡</span>
         <div>
-          <h1 class="brand-title">Episodic Pivot Calendar</h1>
-          <p class="brand-subtitle">NSE Breakout Screener & D+1 Retained Gain Tracker</p>
+          <h1 class="brand-title">Episodic Pivot Momentum Dashboard</h1>
+          <p class="brand-subtitle">NSE Breakout Screener • 4-Category Performance Tracker</p>
         </div>
       </div>
       <div class="nav-status">
@@ -34,100 +34,174 @@
 
     <!-- KPI Summary Metrics Bar -->
     <section class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Total EPs Tracked</div>
-        <div class="kpi-value" id="kpi-total-eps">0</div>
-        <div class="kpi-subtext">Across historical dataset</div>
-      </div>
-      <div class="kpi-card success">
-        <div class="kpi-label">🟢 Green D+1 Rate</div>
-        <div class="kpi-value" id="kpi-green-rate">0%</div>
-        <div class="kpi-subtext">Retained ≥96% of EP gain</div>
-      </div>
-      <div class="kpi-card danger">
-        <div class="kpi-label">🔴 Red D+1 Rate</div>
-        <div class="kpi-value" id="kpi-red-rate">0%</div>
-        <div class="kpi-subtext">Retained &lt;95% of EP gain</div>
+      <div class="kpi-card highlight-card">
+        <div class="kpi-label">🌟 New EPs Today</div>
+        <div class="kpi-value" id="kpi-new-count">0</div>
+        <div class="kpi-subtext" id="kpi-latest-date-label">Fresh 1st-time breakouts</div>
       </div>
       <div class="kpi-card info">
-        <div class="kpi-label">Selected Date EPs</div>
-        <div class="kpi-value" id="kpi-selected-count">0</div>
-        <div class="kpi-subtext" id="kpi-selected-date-label">Click any calendar day</div>
+        <div class="kpi-label">🔁 Persistent (≥2 Hits)</div>
+        <div class="kpi-value" id="kpi-persistent-count">0</div>
+        <div class="kpi-subtext">Repeated momentum leaders</div>
+      </div>
+      <div class="kpi-card success">
+        <div class="kpi-label">🚀 Sustained Rate</div>
+        <div class="kpi-value" id="kpi-sustained-rate">0%</div>
+        <div class="kpi-subtext" id="kpi-sustained-count-sub">0 holding above EP1 Close</div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-label">💨 Fizzled Out Rate</div>
+        <div class="kpi-value" id="kpi-fizzled-rate">0%</div>
+        <div class="kpi-subtext" id="kpi-fizzled-count-sub">0 lost all breakout gains</div>
       </div>
     </section>
 
-    <!-- Calendar Controls & Filters -->
-    <section class="calendar-header-card">
-      <div class="month-navigation">
-        <button class="nav-btn" id="prev-month-btn" title="Previous Month">❮ Prev</button>
-        <h2 class="current-month-title" id="current-month-label">August 2026</h2>
-        <button class="nav-btn" id="next-month-btn" title="Next Month">Next ❯</button>
-        <button class="today-btn" id="today-btn">📅 Go to Latest</button>
-      </div>
-
-      <div class="filter-bar">
-        <span class="filter-label">Filter D+1 Status:</span>
-        <button class="filter-chip active" data-filter="ALL">All EPs</button>
-        <button class="filter-chip status-green" data-filter="GREEN">🟢 Green (Hold ≥96%)</button>
-        <button class="filter-chip status-red" data-filter="RED">🔴 Red (&lt;95% Gain)</button>
-        <button class="filter-chip status-yellow" data-filter="YELLOW">🟡 Yellow (95-96%)</button>
-        <button class="filter-chip status-pending" data-filter="PENDING">⏳ Pending</button>
+    <!-- Main View Mode Switcher -->
+    <section class="view-switcher-container">
+      <div class="view-switch-tabs">
+        <button class="view-switch-btn active" id="btn-view-categories" data-view="categories">
+          📊 4-Category Performance Analysis
+        </button>
+        <button class="view-switch-btn" id="btn-view-calendar" data-view="calendar">
+          📅 Daily Calendar Explorer
+        </button>
       </div>
     </section>
 
-    <!-- Calendar Layout Grid -->
-    <section class="calendar-wrapper">
-      <div class="calendar-weekdays">
-        <div>Mon</div>
-        <div>Tue</div>
-        <div>Wed</div>
-        <div>Thu</div>
-        <div>Fri</div>
-        <div>Sat</div>
-        <div>Sun</div>
+    <!-- ============================================================= -->
+    <!-- VIEW 1: 4-CATEGORY MOMENTUM PERFORMANCE ANALYSIS               -->
+    <!-- ============================================================= -->
+    <section class="view-section active" id="section-categories">
+      
+      <!-- Category Tabs Selector -->
+      <div class="category-tabs-bar">
+        <button class="cat-tab-btn active tab-new" data-category="new_eps">
+          <span class="cat-icon">🌟</span>
+          <span class="cat-name">1. New Episodic Pivots</span>
+          <span class="cat-pill" id="badge-new-count">0</span>
+        </button>
+        <button class="cat-tab-btn tab-persistent" data-category="persistent_eps">
+          <span class="cat-icon">🔁</span>
+          <span class="cat-name">2. Persistent (Repeated)</span>
+          <span class="cat-pill" id="badge-persistent-count">0</span>
+        </button>
+        <button class="cat-tab-btn tab-sustained" data-category="sustained_eps">
+          <span class="cat-icon">🚀</span>
+          <span class="cat-name">3. Sustained Gains</span>
+          <span class="cat-pill" id="badge-sustained-count">0</span>
+        </button>
+        <button class="cat-tab-btn tab-fizzled" data-category="fizzled_eps">
+          <span class="cat-icon">💨</span>
+          <span class="cat-name">4. Fizzled Out</span>
+          <span class="cat-pill" id="badge-fizzled-count">0</span>
+        </button>
       </div>
-      <div class="calendar-days" id="calendar-days-grid">
-        <!-- Generated by JavaScript -->
-      </div>
-    </section>
 
-    <!-- Selected Date Details Panel -->
-    <section class="details-panel" id="details-section">
-      <div class="details-header">
-        <div>
-          <h3 class="details-title" id="selected-date-heading">Select a Date from the Calendar</h3>
-          <p class="details-subtitle" id="selected-date-subheading">Displays all stocks meeting Episodic Pivot criteria on the selected trading day</p>
+      <!-- Category Context Banner -->
+      <div class="category-banner" id="category-banner">
+        <div class="banner-icon" id="banner-icon">🌟</div>
+        <div class="banner-content">
+          <h3 class="banner-title" id="banner-title">Table 1: New Episodic Pivots</h3>
+          <p class="banner-desc" id="banner-desc">Fresh breakout stocks that triggered an Episodic Pivot on the latest trading day with no prior breakout in the last 50 days.</p>
         </div>
-        <div class="search-box">
-          <input type="text" id="symbol-search" placeholder="Search stock symbol..." />
+        <div class="category-search-box">
+          <input type="text" id="category-search-input" placeholder="Search symbol..." />
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="ep-table">
-          <thead>
-            <tr>
-              <th>Symbol</th>
-              <th>EP Close (₹)</th>
-              <th>Change %</th>
-              <th>Vol Ratio</th>
-              <th>Volume</th>
-              <th>50-Day SMA Vol</th>
-              <th>Delivery %</th>
-              <th>D+1 Date</th>
-              <th>D+1 Close (₹)</th>
-              <th>Retained EP Gain %</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
+      <!-- 4-Category Dynamic Table -->
+      <div class="table-responsive category-table-card">
+        <table class="ep-table" id="category-table">
+          <thead id="category-table-head">
+            <!-- Dynamic Headers based on selected Category -->
           </thead>
-          <tbody id="ep-table-body">
-            <tr>
-              <td colspan="12" class="empty-msg">Click a date in the calendar above to view Episodic Pivots.</td>
-            </tr>
+          <tbody id="category-table-body">
+            <!-- Dynamic Rows based on selected Category -->
           </tbody>
         </table>
       </div>
+
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- VIEW 2: DAILY CALENDAR EXPLORER VIEW                          -->
+    <!-- ============================================================= -->
+    <section class="view-section" id="section-calendar">
+      
+      <!-- Calendar Controls & Filters -->
+      <div class="calendar-header-card">
+        <div class="month-navigation">
+          <button class="nav-btn" id="prev-month-btn" title="Previous Month">❮ Prev</button>
+          <h2 class="current-month-title" id="current-month-label">August 2026</h2>
+          <button class="nav-btn" id="next-month-btn" title="Next Month">Next ❯</button>
+          <button class="today-btn" id="today-btn">📅 Go to Latest</button>
+        </div>
+
+        <div class="filter-bar">
+          <span class="filter-label">Filter D+1 Status:</span>
+          <button class="filter-chip active" data-filter="ALL">All EPs</button>
+          <button class="filter-chip status-green" data-filter="GREEN">🟢 Green (Hold ≥96%)</button>
+          <button class="filter-chip status-red" data-filter="RED">🔴 Red (&lt;95% Gain)</button>
+          <button class="filter-chip status-yellow" data-filter="YELLOW">🟡 Yellow (95-96%)</button>
+          <button class="filter-chip status-pending" data-filter="PENDING">⏳ Pending</button>
+        </div>
+      </div>
+
+      <!-- Calendar Layout Grid -->
+      <div class="calendar-wrapper">
+        <div class="calendar-weekdays">
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+          <div>Sun</div>
+        </div>
+        <div class="calendar-days" id="calendar-days-grid">
+          <!-- Generated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Selected Date Details Panel -->
+      <div class="details-panel" id="details-section">
+        <div class="details-header">
+          <div>
+            <h3 class="details-title" id="selected-date-heading">Select a Date from the Calendar</h3>
+            <p class="details-subtitle" id="selected-date-subheading">Displays all stocks meeting Episodic Pivot criteria on the selected trading day</p>
+          </div>
+          <div class="search-box">
+            <input type="text" id="symbol-search" placeholder="Search stock symbol..." />
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="ep-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>EP Close (₹)</th>
+                <th>Change %</th>
+                <th>Vol Ratio</th>
+                <th>Volume</th>
+                <th>50-Day SMA Vol</th>
+                <th>Delivery %</th>
+                <th>D+1 Date</th>
+                <th>D+1 Close (₹)</th>
+                <th>Retained EP Gain %</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="ep-table-body">
+              <tr>
+                <td colspan="12" class="empty-msg">Click a date in the calendar above to view Episodic Pivots.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </section>
 
   </main>
@@ -144,7 +218,7 @@
       </div>
       <div class="modal-body">
         
-        <div class="modal-section-title">⚡ Episodic Pivot Breakout Details (Day T)</div>
+        <div class="modal-section-title">⚡ 1st Episodic Pivot Breakout (Day T)</div>
         <div class="modal-grid">
           <div class="modal-info-item">
             <span class="info-label">Breakout Date</span>
@@ -155,11 +229,11 @@
             <span class="info-value" id="m-ep-close">-</span>
           </div>
           <div class="modal-info-item">
-            <span class="info-label">Previous Close</span>
+            <span class="info-label">Previous Base Close</span>
             <span class="info-value" id="m-ep-prev">-</span>
           </div>
           <div class="modal-info-item">
-            <span class="info-label">Price Change %</span>
+            <span class="info-label">Breakout Price Change %</span>
             <span class="info-value highlight-green" id="m-ep-change">-</span>
           </div>
           <div class="modal-info-item">
@@ -184,31 +258,31 @@
           </div>
         </div>
 
-        <div class="modal-section-title" style="margin-top: 1.25rem;">📈 Next Trading Day Performance (Day T+1)</div>
+        <div class="modal-section-title" style="margin-top: 1.25rem;">📈 50-Day Trajectory & Subsequent Performance</div>
         <div class="modal-grid">
           <div class="modal-info-item">
-            <span class="info-label">D+1 Trading Date</span>
-            <span class="info-value" id="m-d1-date">-</span>
+            <span class="info-label">Current / Latest Price</span>
+            <span class="info-value" id="m-current-price">-</span>
           </div>
           <div class="modal-info-item">
-            <span class="info-label">D+1 Closing Price</span>
-            <span class="info-value" id="m-d1-close">-</span>
+            <span class="info-label">Total Gain Since 1st EP</span>
+            <span class="info-value" id="m-return-since-ep1">-</span>
           </div>
           <div class="modal-info-item">
-            <span class="info-label">D+1 Day Range (O / H / L)</span>
-            <span class="info-value" id="m-d1-ohl">-</span>
+            <span class="info-label">Retained 1st EP Gain %</span>
+            <span class="info-value" id="m-retained-ep1">-</span>
           </div>
           <div class="modal-info-item">
-            <span class="info-label">D+1 Return %</span>
-            <span class="info-value" id="m-d1-return">-</span>
+            <span class="info-label">Peak High Since EP</span>
+            <span class="info-value highlight-green" id="m-peak-high">-</span>
           </div>
           <div class="modal-info-item">
-            <span class="info-label">Retained EP Gain %</span>
-            <span class="info-value" id="m-d1-retained">-</span>
+            <span class="info-label">Total EP Hits (50d)</span>
+            <span class="info-value highlight-blue" id="m-hits-count">-</span>
           </div>
           <div class="modal-info-item">
-            <span class="info-label">Final Evaluation</span>
-            <span class="info-value" id="m-d1-eval">-</span>
+            <span class="info-label">Classification Status</span>
+            <span class="info-value" id="m-classification-eval">-</span>
           </div>
         </div>
 
@@ -222,7 +296,7 @@
   </div>
 
   <footer class="footer">
-    <p>Episodic Pivot Screener Framework • Automated Daily Execution at 4:00 PM IST</p>
+    <p>Episodic Pivot Momentum Screener Framework • Automated Daily Execution at 6:30 PM IST</p>
   </footer>
 
   <script src="app.js"></script>
