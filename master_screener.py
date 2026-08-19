@@ -108,43 +108,50 @@ def run_pipeline():
     print("═"*60 + "\n")
 
     # 1. Sync Bhavcopy
-    lookback_days = int(os.getenv("LOOKBACK_DAYS", "3"))
-    print(f"STEP 1: Syncing Bhavcopy to Supabase (Lookback: {lookback_days} days)...")
-    download_bhavcopies_to_db(lookback_days)
+    try:
+        lookback_days = int(os.getenv("LOOKBACK_DAYS", "3"))
+        print(f"STEP 1: Syncing Bhavcopy to Supabase (Lookback: {lookback_days} days)...")
+        download_bhavcopies_to_db(lookback_days)
+    except Exception as e:
+        print(f"⚠️ STEP 1 failed with error: {e}")
     
     # 2. Sync 52-Week High Data
-    print("\nSTEP 2: Syncing 52-Week High Data...")
-    check_nse_report() # Note: This script downloads to current dir, usually workspace/screener
-    # We should move it to dailyScreener if it's not there, but check_nse_report is hardcoded to current dir
+    try:
+        print("\nSTEP 2: Syncing 52-Week High Data...")
+        check_nse_report()
+    except Exception as e:
+        print(f"⚠️ STEP 2 failed with error: {e}")
     
     # 3. Run EP Screener
-    print("\nSTEP 3: Running Episodic Pivot Scan...")
-    run_episodic_pivot_db_screener()
+    try:
+        print("\nSTEP 3: Running Episodic Pivot Scan...")
+        run_episodic_pivot_db_screener()
+    except Exception as e:
+        print(f"⚠️ STEP 3 failed with error: {e}")
     
-    # 4. Identify the target date for LLM (Latest date in pivots)
-    engine = get_db_engine()
-    with engine.connect() as conn:
-        result = conn.execute(text("SELECT MAX(\"DATE\") FROM \"episodicPivot\""))
-        latest_date = result.scalar()
-    
-    if not latest_date:
-        print("❌ No pivots found. Pipeline stopped.")
-        return
-
-    if isinstance(latest_date, str):
-        target_date_str = latest_date
-    else:
-        target_date_str = latest_date.strftime('%Y-%m-%d')
+    # 4 & 5. Identify target date for LLM and Run Gemini Analysis
+    try:
+        engine = get_db_engine()
+        latest_date = None
+        if engine:
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT MAX(\"DATE\") FROM \"episodicPivot\""))
+                latest_date = result.scalar()
         
-    print(f"\nSTEP 4: Preparing LLM Prompt for {target_date_str}...")
-    
-    csv_data = prepare_master_llm_data(target_date_str)
-    
-    if csv_data:
-        with open(PROMPT_TEMPLATE_PATH, "r") as f:
-            prompt_text = f.read()
+        if latest_date:
+            if isinstance(latest_date, str):
+                target_date_str = latest_date
+            else:
+                target_date_str = latest_date.strftime('%Y-%m-%d')
+                
+            print(f"\nSTEP 4: Preparing LLM Prompt for {target_date_str}...")
+            csv_data = prepare_master_llm_data(target_date_str)
             
-        combined_prompt = f"""
+            if csv_data:
+                with open(PROMPT_TEMPLATE_PATH, "r") as f:
+                    prompt_text = f.read()
+                    
+                combined_prompt = f"""
 {prompt_text}
 
 ════════════════════════════════════════════════════════
@@ -152,39 +159,52 @@ INPUT DATA (CSV FORMAT) - DATE: {target_date_str}
 ════════════════════════════════════════════════════════
 {csv_data}
 """
-        output_path = os.path.join(DAILY_SCREENER_DIR, f"llm_prompt_{target_date_str}.txt")
-        with open(output_path, "w") as f:
-            f.write(combined_prompt)
-            
-        print(f"Generated combined prompt at: {output_path}")
+                output_path = os.path.join(DAILY_SCREENER_DIR, f"llm_prompt_{target_date_str}.txt")
+                with open(output_path, "w") as f:
+                    f.write(combined_prompt)
+                    
+                print(f"Generated combined prompt at: {output_path}")
 
-        # 5. Run Gemini Analysis
-        print("\nSTEP 5: Running AI Analysis with Gemini...")
-        analysis_result = analyze_with_gemini(combined_prompt)
-        
-        if analysis_result:
-            # Save Analysis Result
-            analysis_save_path = os.path.join(DAILY_SCREENER_DIR, f"EP_Output_{target_date_str}.md")
-            with open(analysis_save_path, "w") as f:
-                f.write(analysis_result)
-            print(f"✅ AI Analysis complete! Report saved at: {analysis_save_path}")
-            
-            # Send to Telegram
-            send_telegram_markdown(analysis_result, target_date_str)
+                # 5. Run Gemini Analysis
+                print("\nSTEP 5: Running AI Analysis with Gemini...")
+                try:
+                    analysis_result = analyze_with_gemini(combined_prompt)
+                    
+                    if analysis_result:
+                        # Save Analysis Result
+                        analysis_save_path = os.path.join(DAILY_SCREENER_DIR, f"EP_Output_{target_date_str}.md")
+                        with open(analysis_save_path, "w") as f:
+                            f.write(analysis_result)
+                        print(f"✅ AI Analysis complete! Report saved at: {analysis_save_path}")
+                        
+                        # Send to Telegram
+                        send_telegram_markdown(analysis_result, target_date_str)
+                    else:
+                        print("⚠️ AI Analysis skipped or failed.")
+                except Exception as e:
+                    print(f"⚠️ Gemini AI Analysis / Telegram failed: {e}")
+            else:
+                print(f"⚠️ No CSV data generated for target date {target_date_str}.")
         else:
-            print("⚠️ AI Analysis skipped or failed.")
+            print("⚠️ No pivots found in episodicPivot table.")
+    except Exception as e:
+        print(f"⚠️ LLM processing step encountered error: {e}")
 
-        # 6. Run D+1 Performance Tracking
+    # 6. Run D+1 Performance Tracking (Always run to update historical statuses)
+    try:
         print("\nSTEP 6: Running D+1 Performance Tracking (Last 50 Days)...")
         run_ep_d1_performance_tracker()
+    except Exception as e:
+        print(f"⚠️ STEP 6 (D+1 Tracker) error: {e}")
 
-        # 7. Export Calendar JSON for GitHub Pages UI
+    # 7. Export Calendar JSON for GitHub Pages UI (Always run to update dashboard data)
+    try:
         print("\nSTEP 7: Exporting JSON Data for GitHub Pages Calendar UI...")
         export_ep_calendar_json()
+    except Exception as e:
+        print(f"❌ STEP 7 (Export Calendar JSON) error: {e}")
 
-        print("\n" + "═"*60 + "\n")
-    else:
-        print("❌ Pipeline failed during LLM data preparation.")
+    print("\n" + "═"*60 + "\n")
 
 if __name__ == "__main__":
     run_pipeline()

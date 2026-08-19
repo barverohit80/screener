@@ -34,7 +34,14 @@ const filterChips = document.querySelectorAll('.filter-chip');
 // Initialize App
 async function initApp() {
   try {
-    const res = await fetch('data/ep_calendar_data.json');
+    const timestamp = new Date().getTime();
+    const res = await fetch(`data/ep_calendar_data.json?t=${timestamp}`, {
+      cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache'
+      }
+    });
     if (!res.ok) throw new Error('Failed to load JSON data');
     appData = await res.json();
     
@@ -44,9 +51,11 @@ async function initApp() {
     // Set initial date to latest date in dataset
     const dates = Object.keys(appData.calendar).sort().reverse();
     if (dates.length > 0) {
-      const latestDate = new Date(dates[0]);
-      currentYear = latestDate.getFullYear();
-      currentMonth = latestDate.getMonth();
+      const parts = dates[0].split('-');
+      if (parts.length === 3) {
+        currentYear = parseInt(parts[0], 10);
+        currentMonth = parseInt(parts[1], 10) - 1;
+      }
       selectedDateStr = dates[0];
     }
 
@@ -282,9 +291,11 @@ function setupEventListeners() {
   todayBtn.addEventListener('click', () => {
     const dates = Object.keys(appData.calendar).sort().reverse();
     if (dates.length > 0) {
-      const latestDate = new Date(dates[0]);
-      currentYear = latestDate.getFullYear();
-      currentMonth = latestDate.getMonth();
+      const parts = dates[0].split('-');
+      if (parts.length === 3) {
+        currentYear = parseInt(parts[0], 10);
+        currentMonth = parseInt(parts[1], 10) - 1;
+      }
       selectedDateStr = dates[0];
       renderCalendar();
       renderSelectedDateDetails(selectedDateStr);

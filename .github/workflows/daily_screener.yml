@@ -2,7 +2,7 @@ name: Daily Stock Screener Workflow
 
 on:
   schedule:
-    # Trigger every day at 4:00 PM IST (10:30 AM UTC)
+    # Trigger every day at 6:30 PM IST (1:00 PM UTC) after market close & Bhavcopy release
     - cron: '00 13 * * *'
   workflow_dispatch:
     inputs:
@@ -15,13 +15,20 @@ on:
         required: false
         default: '1'
 
-# Allow the workflow to push commits back to the repository
+# Permissions required for pushing git commits and deploying to GitHub Pages
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  run-screener:
-    name: Run Episodic Pivot Master Screener
+  run-screener-and-deploy:
+    name: Run Screener Pipeline & Deploy GitHub Pages
     runs-on: ubuntu-latest
 
     steps:
@@ -53,25 +60,26 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python master_screener.py
-        continue-on-error: true
 
-      - name: Check for errors and display logs
-        if: failure()
-        run: |
-          echo "❌ Screener pipeline failed. Checking for logs..."
-          if [ -f "output/error.log" ]; then
-            echo "Error log contents:"
-            cat output/error.log
-          fi
-          exit 1
-
-      - name: Commit & Publish GitHub Pages Calendar Data
+      - name: Commit & Push Updated Calendar Data
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add docs/data/ep_calendar_data.json
           git status
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update GitHub Pages EP Calendar JSON data" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update GitHub Pages EP Calendar JSON data [skip ci]" && git push origin main)
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Upload Output Artifacts
         uses: actions/upload-artifact@v4
