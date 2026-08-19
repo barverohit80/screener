@@ -178,9 +178,16 @@ def export_ep_calendar_json():
         ep1_gain_rs = round(ep1_close - ep1_prev, 2)
         
         latest_ep_date_str = latest_ep['DATE'].strftime('%Y-%m-%d')
+        latest_ep_prev = safe_float(latest_ep.get('PREV'))
+        latest_ep_open = safe_float(latest_ep.get('OPEN'))
+        latest_ep_high = safe_float(latest_ep.get('HIGH'))
+        latest_ep_low = safe_float(latest_ep.get('LOW'))
         latest_ep_close = safe_float(latest_ep.get('CLOSE'))
         latest_ep_change_pct = safe_float(latest_ep.get('Price_Change_%'))
         latest_ep_vol_ratio = safe_float(latest_ep.get('Vol_Ratio'))
+        latest_ep_volume = safe_int(latest_ep.get('VOLUME'))
+        latest_ep_sma_vol = safe_float(latest_ep.get('SMA_Vol_50'))
+        latest_ep_deliv_per = safe_float(latest_ep.get('DELIV_PER'))
         latest_deliv_trend = str(latest_ep.get('Deliv_Trend', 'NEW'))
         
         appearance_count = len(sym_eps)
@@ -223,9 +230,16 @@ def export_ep_calendar_json():
             'ep1_sma_vol': ep1_sma_vol,
             'ep1_deliv_per': ep1_deliv_per,
             'latest_ep_date': latest_ep_date_str,
+            'latest_ep_prev': latest_ep_prev,
+            'latest_ep_open': latest_ep_open,
+            'latest_ep_high': latest_ep_high,
+            'latest_ep_low': latest_ep_low,
             'latest_ep_close': latest_ep_close,
             'latest_ep_change_pct': latest_ep_change_pct,
             'latest_ep_vol_ratio': latest_ep_vol_ratio,
+            'latest_ep_volume': latest_ep_volume,
+            'latest_ep_sma_vol': latest_ep_sma_vol,
+            'latest_ep_deliv_per': latest_ep_deliv_per,
             'latest_deliv_trend': latest_deliv_trend,
             'current_price': current_price,
             'current_date': current_date_str,

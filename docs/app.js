@@ -276,9 +276,9 @@ function renderCategoryTable() {
           <td style="font-weight: 700;">₹${item.latest_ep_close.toFixed(2)}</td>
           <td style="color: var(--accent-green); font-weight: 700;">+${item.latest_ep_change_pct}%</td>
           <td style="color: var(--accent-blue); font-weight: 700;">${item.latest_ep_vol_ratio}x</td>
-          <td>${item.ep1_volume ? item.ep1_volume.toLocaleString('en-IN') : 'N/A'}</td>
-          <td>${item.ep1_sma_vol ? Math.round(item.ep1_sma_vol).toLocaleString('en-IN') : 'N/A'}</td>
-          <td>${item.ep1_deliv_per ? `${item.ep1_deliv_per}%` : 'N/A'}</td>
+          <td>${(item.latest_ep_volume || item.ep1_volume) ? (item.latest_ep_volume || item.ep1_volume).toLocaleString('en-IN') : 'N/A'}</td>
+          <td>${(item.latest_ep_sma_vol || item.ep1_sma_vol) ? Math.round(item.latest_ep_sma_vol || item.ep1_sma_vol).toLocaleString('en-IN') : 'N/A'}</td>
+          <td>${(item.latest_ep_deliv_per !== undefined && item.latest_ep_deliv_per !== null) ? `${item.latest_ep_deliv_per}%` : (item.ep1_deliv_per ? `${item.ep1_deliv_per}%` : 'N/A')}</td>
           <td>${breakoutTypeHtml}</td>
           <td><span class="badge ${statusBadge}">${item.d1_status_latest || 'PENDING'}</span></td>
           <td><button class="view-btn" onclick="openCategoryStockModal('${item.symbol}')">Details 🔍</button></td>
