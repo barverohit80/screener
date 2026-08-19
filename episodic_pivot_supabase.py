@@ -130,12 +130,12 @@ def run_episodic_pivot_db_screener():
             
             # New EP Requirements
             sma_vol_50 = group_list.iloc[loc-49 : loc+1]['VOLUME'].mean()
-            min_avg_vol_ok = sma_vol_50 >= 100000
+            min_avg_vol_ok = sma_vol_50 >= 50000
             vol_ratio = latest['VOLUME'] / sma_vol_50 if sma_vol_50 > 0 else 0
             vol_spike_ok = latest['VOLUME'] >= (sma_vol_50 * 3)
             range_day = latest['HIGH'] - latest['LOW']
             candle_strength_ok = latest['CLOSE'] >= (latest['LOW'] + (range_day * 0.60))
-            price_ok = latest['CLOSE'] >= 50
+            price_ok = latest['CLOSE'] >= 100
             gap_up = latest['OPEN'] >= (latest['PREV'] * 1.05)
             gain_10 = latest['CLOSE'] >= (latest['PREV'] * 1.10)
             momentum_ok = gap_up or gain_10
